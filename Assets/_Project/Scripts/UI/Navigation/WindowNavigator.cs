@@ -25,12 +25,24 @@ namespace ProjectScare.UI
 
         public void Push(WindowTransition window)
         {
+            if (window == null)
+            {
+                Debug.LogError("Window push rejected: the window is missing.", this);
+                return;
+            }
+
+            if (screenCoveredBus.Value)
+                return;
+
             if (stack.TryBeginPush(window, out WindowTransition previous))
                 RunTransitionAsync(previous, window, destroyCancellationToken).Forget();
         }
 
         public void Back()
         {
+            if (screenCoveredBus.Value)
+                return;
+
             if (stack.TryBeginPop(out WindowTransition closing, out WindowTransition next))
                 RunTransitionAsync(closing, next, destroyCancellationToken).Forget();
         }

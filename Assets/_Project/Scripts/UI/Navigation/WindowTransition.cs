@@ -54,14 +54,17 @@ namespace ProjectScare.UI
         {
             transitionTween?.Kill();
 
+            // The ease goes on each tween: on the sequence it would stack on top of their default ease.
             transitionTween = DOTween.Sequence()
-                .Join(canvasGroup.DOFade(alpha, duration))
-                .Join(rectTransform.DOAnchorPos(position, duration))
-                .SetEase(ease)
+                .Join(canvasGroup.DOFade(alpha, duration).SetEase(ease))
+                .Join(rectTransform.DOAnchorPos(position, duration).SetEase(ease))
                 .SetUpdate(true)
                 .SetLink(gameObject);
 
-            await transitionTween.ToUniTask(TweenCancelBehaviour.Kill, ct);
+            // Cancelling the await stops the caller from touching this object once the scene is unloaded.
+            await transitionTween.ToUniTask(TweenCancelBehaviour.KillAndCancelAwait, ct);
+
+            transitionTween = null;
         }
     }
 }

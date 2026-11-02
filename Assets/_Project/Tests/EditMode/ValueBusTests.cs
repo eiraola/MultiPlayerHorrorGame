@@ -18,12 +18,18 @@ namespace ProjectScare.Tests.EditMode
         [Test]
         public void Set_NewValue_UpdatesValueAndNotifies()
         {
+            int notifications = 0;
             bool received = false;
-            bus.Changed += value => received = value;
+            bus.Changed += value =>
+            {
+                notifications++;
+                received = value;
+            };
 
             bus.Set(true);
 
             Assert.IsTrue(bus.Value);
+            Assert.AreEqual(1, notifications);
             Assert.IsTrue(received);
         }
 
@@ -39,10 +45,39 @@ namespace ProjectScare.Tests.EditMode
         }
 
         [Test]
+        public void Set_SameValueTwice_NotifiesOnce()
+        {
+            int notifications = 0;
+            bus.Changed += _ => notifications++;
+
+            bus.Set(true);
+            bus.Set(true);
+
+            Assert.AreEqual(1, notifications);
+        }
+
+        [Test]
+        public void Set_DifferentValues_NotifiesEachChange()
+        {
+            int notifications = 0;
+            bool lastReceived = false;
+            bus.Changed += value =>
+            {
+                notifications++;
+                lastReceived = value;
+            };
+
+            bus.Set(true);
+            bus.Set(false);
+
+            Assert.AreEqual(2, notifications);
+            Assert.IsFalse(lastReceived);
+        }
+
+        [Test]
         public void ResetRuntimeState_RestoresInitialValue()
         {
             SetInitialValue(true);
-            bus.Set(false);
 
             bus.ResetRuntimeState();
 

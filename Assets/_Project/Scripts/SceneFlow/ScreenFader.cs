@@ -27,10 +27,11 @@ namespace ProjectScare.SceneFlow
 
         public void HoldBlack() => isBlackHeld = true;
 
-        public async UniTask FadeToBlackAsync(CancellationToken ct)
+        /// <returns>False if a newer fade replaced this one, so the screen may not be black yet.</returns>
+        public async UniTask<bool> FadeToBlackAsync(CancellationToken ct)
         {
             screenCoveredBus.Set(true);
-            await FadeAsync(OpaqueAlpha, config.FadeToBlackDuration, ct);
+            return await FadeAsync(OpaqueAlpha, config.FadeToBlackDuration, ct);
         }
 
         public async UniTask FadeFromBlackAsync(CancellationToken ct)
@@ -47,8 +48,11 @@ namespace ProjectScare.SceneFlow
         /// <returns>False if a newer fade replaced this one before it finished.</returns>
         private async UniTask<bool> FadeAsync(float targetAlpha, float fullDuration, CancellationToken ct)
         {
-            fadeTween?.Kill();
+            // Cleared before killing: Kill resumes the replaced fade synchronously,
+            // and that fade must already see that it is no longer the current one.
+            Tween previous = fadeTween;
             fadeTween = null;
+            previous?.Kill();
 
             float remainingPath = Mathf.Abs(targetAlpha - fadeGroup.alpha);
             if (Mathf.Approximately(remainingPath, 0f))
@@ -59,9 +63,13 @@ namespace ProjectScare.SceneFlow
 
             Tween tween = CreateFadeTween(targetAlpha, fullDuration * remainingPath);
             fadeTween = tween;
-            await tween.ToUniTask(TweenCancelBehaviour.Kill, ct);
+            await tween.ToUniTask(TweenCancelBehaviour.KillAndCancelAwait, ct);
 
-            return fadeTween == tween;
+            if (fadeTween != tween)
+                return false;
+
+            fadeTween = null;
+            return true;
         }
 
         private Tween CreateFadeTween(float targetAlpha, float duration) =>

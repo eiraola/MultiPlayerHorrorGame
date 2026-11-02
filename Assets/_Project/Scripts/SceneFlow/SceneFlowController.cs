@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using ProjectScare.Core;
@@ -32,6 +33,12 @@ namespace ProjectScare.SceneFlow
                 return;
             }
 
+            if (sceneName == gameObject.scene.name)
+            {
+                Debug.LogError($"Scene request '{sceneName}' rejected: it is the persistent scene.", this);
+                return;
+            }
+
             if (!Application.CanStreamedLevelBeLoaded(sceneName))
             {
                 Debug.LogError($"Scene '{sceneName}' cannot be loaded. Is it in the build list?", this);
@@ -47,10 +54,16 @@ namespace ProjectScare.SceneFlow
 
             try
             {
-                await screenFader.FadeToBlackAsync(ct);
+                if (!await screenFader.FadeToBlackAsync(ct))
+                    return;
+
                 await UnloadContentSceneAsync(ct);
                 await LoadContentSceneAsync(sceneName, ct);
                 await screenFader.FadeFromBlackAsync(ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                Debug.LogError($"Scene change to '{sceneName}' failed: {e}", this);
             }
             finally
             {

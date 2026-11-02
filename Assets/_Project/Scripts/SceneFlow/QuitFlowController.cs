@@ -55,7 +55,11 @@ namespace ProjectScare.SceneFlow
             try
             {
                 screenFader.HoldBlack();
-                await screenFader.FadeToBlackAsync(ct);
+
+                // A scene request during the quit replaces this fade, and the quit must still end on black.
+                // The yield leaves the Kill that resumed this code before fading again.
+                while (!await screenFader.FadeToBlackAsync(ct))
+                    await UniTask.Yield(ct);
 
                 // The fade can finish synchronously when the screen is already black,
                 // and Quit must not run inside the wantsToQuit callback that started it.
