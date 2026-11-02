@@ -1,0 +1,14 @@
+{
+    "name": "ProjectScare.UI",
+    "rootNamespace": "ProjectScare.UI",
+    "references": ["ProjectScare.Core", "UniTask", "UniTask.DOTween", "DOTween.Modules", "UnityEngine.UI", "Unity.TextMeshPro"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
