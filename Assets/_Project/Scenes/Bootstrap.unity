@@ -150,9 +150,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: ProjectScare.Network::ProjectScare.Network.HostSessionController
   networkManager: {fileID: 1698815433}
   transport: {fileID: 1698815432}
+  sessionServices: {fileID: 804759697}
   hostRequestedBus: {fileID: 11400000, guid: 8176244f08573bd4eab2a5156bdb19cd, type: 2}
   hostFailedBus: {fileID: 11400000, guid: 63e61c2d1d304955a7df5bbb36968f03, type: 2}
   contentUnloadRequestBus: {fileID: 11400000, guid: 781b04e654074ddcbbb97ca39eecb92f, type: 2}
+  regionsBus: {fileID: 11400000, guid: 3ad4d71e8ccb29fe78067705bb6edc11, type: 2}
+  joinCodeBus: {fileID: 11400000, guid: 3fb82d6e19c74a57b0e46c1da95f7208, type: 2}
 --- !u!4 &375693978
 Transform:
   m_ObjectHideFlags: 0
@@ -243,6 +246,51 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 450519137}
   m_CullTransparentMesh: 1
+--- !u!1 &804759696
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 804759698}
+  - component: {fileID: 804759697}
+  m_Layer: 0
+  m_Name: SessionServices
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &804759697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 804759696}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 473913afba9c136e8c2b76642a8286a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ProjectScare.Network::ProjectScare.Network.SessionServices
+  networkManager: {fileID: 1698815433}
+--- !u!4 &804759698
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 804759696}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1049061498
 GameObject:
   m_ObjectHideFlags: 0
@@ -732,6 +780,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1757640086
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1757640088}
+  - component: {fileID: 1757640087}
+  m_Layer: 0
+  m_Name: JoinSessionController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1757640087
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757640086}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60aaf7e53927b8c468a0bd797eae8dd4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ProjectScare.Network::ProjectScare.Network.JoinSessionController
+  networkManager: {fileID: 1698815433}
+  transport: {fileID: 1698815432}
+  sessionServices: {fileID: 804759697}
+  joinRequestedBus: {fileID: 11400000, guid: 9d0211e0f9e845d4195446b6ab083145, type: 2}
+  joinFailedBus: {fileID: 11400000, guid: 65d7a414334efbe375d7c4877e0232ae, type: 2}
+  contentUnloadRequestBus: {fileID: 11400000, guid: 781b04e654074ddcbbb97ca39eecb92f, type: 2}
+--- !u!4 &1757640088
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1757640086}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -742,3 +840,5 @@ SceneRoots:
   - {fileID: 1131213478}
   - {fileID: 1698815434}
   - {fileID: 375693978}
+  - {fileID: 804759698}
+  - {fileID: 1757640088}

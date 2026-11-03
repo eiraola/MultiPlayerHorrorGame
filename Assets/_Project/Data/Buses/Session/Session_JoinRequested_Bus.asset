@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: feacd2a2c50c1f54280239fa3f057ab4, type: 3}
+  m_Script: {fileID: 11500000, guid: c978d1ac6207520e504f79d2fee3bcaa, type: 3}
   m_Name: Session_JoinRequested_Bus
-  m_EditorClassIdentifier: ProjectScare.Core::ProjectScare.Core.EventBus
+  m_EditorClassIdentifier: ProjectScare.Core::ProjectScare.Core.JoinGameRequestBus
   logRaises: 0

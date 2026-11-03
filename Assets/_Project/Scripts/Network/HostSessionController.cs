@@ -6,8 +6,8 @@ using Cysharp.Threading.Tasks;
 using ProjectScare.Core;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
-using Unity.Services.Authentication;
-using Unity.Services.Core;
+using Unity.Services.Lobbies;
+using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
 using UnityEngine;
@@ -17,40 +17,80 @@ namespace ProjectScare.Network
 {
     public sealed class HostSessionController : MonoBehaviour
     {
-        private const string LobbySceneName = "MultiplayerLobby";
-        private const string RelayConnectionType = "dtls";
         private const string TimeoutMessage = "Creating the room took too long. Please try again.";
         private const string GenericFailureMessage = "The room could not be created. Please try again.";
+        private const string BusyMessage = "Another game is being set up. Please try again in a moment.";
 
-        // Relay counts the connections the host accepts, not the host itself.
+        // Relay counts the connections the host accepts, not the host itself. The lobby counts everyone.
         private const int MaxRemotePlayers = 1;
+        private const int MaxLobbyPlayers = MaxRemotePlayers + 1;
 
         private static readonly TimeSpan CreationTimeout = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan RegionQueryTimeout = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(15);
 
         [SerializeField] private NetworkManager networkManager;
         [SerializeField] private UnityTransport transport;
+        [SerializeField] private SessionServices sessionServices;
         [SerializeField] private HostGameRequestBus hostRequestedBus;
         [SerializeField] private StringEventBus hostFailedBus;
         [SerializeField] private EventBus contentUnloadRequestBus;
+        [SerializeField] private StringArrayValueBus regionsBus;
+        [SerializeField] private StringValueBus joinCodeBus;
 
-        private bool isCreating;
-        private Task signInTask;
+        private Task<Lobby> lobbyCreation;
+        private CancellationTokenSource heartbeatCts;
 
         private void Awake()
         {
-            isCreating = false;
-            signInTask = null;
+            lobbyCreation = null;
+            heartbeatCts = null;
         }
 
         private void OnEnable() => hostRequestedBus.Raised += HandleHostRequested;
 
         private void OnDisable() => hostRequestedBus.Raised -= HandleHostRequested;
 
+        private void Start() => LoadRegionsAsync(destroyCancellationToken).Forget();
+
+        private void OnDestroy()
+        {
+            StopHeartbeat();
+
+            // Best effort: the process may die first, and then the lobby expires without its heartbeat.
+            RemoveLobbyAsync(lobbyCreation).Forget();
+        }
+
+        private async UniTaskVoid LoadRegionsAsync(CancellationToken destroyToken)
+        {
+            using var queryCts = CancellationTokenSource.CreateLinkedTokenSource(destroyToken);
+            using IDisposable timeout = queryCts.CancelAfterSlim(RegionQueryTimeout, DelayType.UnscaledDeltaTime);
+
+            try
+            {
+                await sessionServices.EnsureSignedInAsync(queryCts.Token);
+
+                List<Region> regions = await RelayService.Instance
+                    .ListRegionsAsync()
+                    .AsUniTask()
+                    .AttachExternalCancellation(queryCts.Token);
+
+                regionsBus.Set(regions.ConvertAll(region => region.Id).ToArray());
+            }
+            catch (Exception e)
+            {
+                // Without the list the window still offers Automatic, so creating a room stays possible.
+                if (!destroyToken.IsCancellationRequested)
+                    Debug.LogError($"Listing the regions failed: {e}", this);
+            }
+        }
+
         private void HandleHostRequested(HostGameRequest request)
         {
-            if (isCreating)
+            if (!sessionServices.TryBeginOperation())
             {
-                Debug.LogWarning($"Host request '{request.Name}' ignored: a room is already being created.", this);
+                Debug.LogWarning($"Host request '{request.Name}' refused: another operation is running.", this);
+                hostFailedBus.Raise(BusyMessage);
                 return;
             }
 
@@ -59,14 +99,20 @@ namespace ProjectScare.Network
 
         private async UniTaskVoid CreateRoomAsync(HostGameRequest request, CancellationToken destroyToken)
         {
-            isCreating = true;
-
             using var creationCts = CancellationTokenSource.CreateLinkedTokenSource(destroyToken);
             using IDisposable timeout = creationCts.CancelAfterSlim(CreationTimeout, DelayType.UnscaledDeltaTime);
 
             try
             {
-                await StartRelayHostAsync(creationCts.Token);
+                await sessionServices.EnsureSignedInAsync(creationCts.Token);
+
+                string relayCode = await CreateRelayAllocationAsync(request.Region, creationCts.Token);
+                Lobby lobby = await CreateLobbyAsync(request, relayCode, creationCts.Token);
+
+                StartHeartbeat(lobby.Id, destroyToken);
+                joinCodeBus.Set(lobby.LobbyCode);
+
+                StartHost();
                 await LoadLobbySceneAsync(creationCts.Token);
             }
             catch (Exception e)
@@ -79,35 +125,91 @@ namespace ProjectScare.Network
             }
 
             Debug.Log($"Room '{request.Name}' created.", this);
-            isCreating = false;
+            sessionServices.EndOperation();
             contentUnloadRequestBus.Raise();
         }
 
-        private async UniTask StartRelayHostAsync(CancellationToken ct)
+        // A null region lets the service pick the closest one.
+        private async UniTask<string> CreateRelayAllocationAsync(string region, CancellationToken ct)
         {
-            // A second anonymous sign-in is rejected while another is running, so a retry joins the abandoned one.
-            if (signInTask == null || signInTask.IsCompleted)
-                signInTask = InitializeAndSignInAsync();
-
-            await signInTask.AsUniTask().AttachExternalCancellation(ct);
-
             Allocation allocation = await RelayService.Instance
-                .CreateAllocationAsync(MaxRemotePlayers)
+                .CreateAllocationAsync(MaxRemotePlayers, region)
                 .AsUniTask()
                 .AttachExternalCancellation(ct);
 
-            transport.SetRelayServerData(allocation.ToRelayServerData(RelayConnectionType));
+            string relayCode = await RelayService.Instance
+                .GetJoinCodeAsync(allocation.AllocationId)
+                .AsUniTask()
+                .AttachExternalCancellation(ct);
 
-            if (!networkManager.StartHost())
-                throw new InvalidOperationException("Netcode could not start as host.");
+            transport.SetRelayServerData(allocation.ToRelayServerData(SessionServices.RelayConnectionType));
+
+            return relayCode;
         }
 
-        private static async Task InitializeAndSignInAsync()
+        private async UniTask<Lobby> CreateLobbyAsync(HostGameRequest request, string relayCode, CancellationToken ct)
         {
-            await UnityServices.InitializeAsync();
+            var options = new CreateLobbyOptions
+            {
+                IsPrivate = !request.IsPublic,
+                Password = request.Password,
 
-            if (!AuthenticationService.Instance.IsSignedIn)
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
+                // Only members receive it, so the Relay allocation cannot be reached without passing the password.
+                Data = new Dictionary<string, DataObject>
+                {
+                    [SessionServices.RelayCodeKey] = new DataObject(DataObject.VisibilityOptions.Member, relayCode),
+                },
+            };
+
+            // Kept because the request cannot be cancelled: after a timeout it may still create a lobby to remove.
+            lobbyCreation = LobbyService.Instance.CreateLobbyAsync(request.Name, MaxLobbyPlayers, options);
+
+            return await lobbyCreation.AsUniTask().AttachExternalCancellation(ct);
+        }
+
+        private void StartHeartbeat(string lobbyId, CancellationToken destroyToken)
+        {
+            heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(destroyToken);
+            HeartbeatLoopAsync(lobbyId, heartbeatCts.Token).Forget();
+        }
+
+        private void StopHeartbeat()
+        {
+            heartbeatCts?.Cancel();
+            heartbeatCts?.Dispose();
+            heartbeatCts = null;
+        }
+
+        private async UniTaskVoid HeartbeatLoopAsync(string lobbyId, CancellationToken ct)
+        {
+            while (!await UniTask.Delay(HeartbeatInterval, ignoreTimeScale: true, cancellationToken: ct).SuppressCancellationThrow())
+            {
+                try
+                {
+                    await LobbyService.Instance.SendHeartbeatPingAsync(lobbyId);
+                }
+                catch (LobbyServiceException e) when (e.Reason == LobbyExceptionReason.LobbyNotFound)
+                {
+                    Debug.LogWarning("The lobby no longer exists, so its heartbeat stops.", this);
+                    return;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"A lobby heartbeat failed: {e}", this);
+                }
+            }
+        }
+
+        private void StartHost()
+        {
+            if (!networkManager.StartHost())
+                throw new InvalidOperationException("Netcode could not start as host.");
+
+            NetworkSceneManager sceneManager = networkManager.SceneManager;
+
+            // The filter goes first because the synchronization mode reads it to pick the scenes it keeps out of the list.
+            sceneManager.VerifySceneBeforeLoading = (_, sceneName, _) => sceneName == SessionServices.LobbySceneName;
+            sceneManager.SetClientSynchronizationMode(LoadSceneMode.Additive);
         }
 
         private async UniTask LoadLobbySceneAsync(CancellationToken ct)
@@ -119,7 +221,7 @@ namespace ProjectScare.Network
 
             void HandleLoadCompleted(string sceneName, LoadSceneMode mode, List<ulong> completed, List<ulong> timedOut)
             {
-                if (sceneName == LobbySceneName)
+                if (sceneName == SessionServices.LobbySceneName)
                     loadCompleted.TrySetResult();
             }
 
@@ -128,10 +230,10 @@ namespace ProjectScare.Network
             try
             {
                 // Additive because Single would also unload the persistent Bootstrap scene.
-                SceneEventProgressStatus status = sceneManager.LoadScene(LobbySceneName, LoadSceneMode.Additive);
+                SceneEventProgressStatus status = sceneManager.LoadScene(SessionServices.LobbySceneName, LoadSceneMode.Additive);
 
                 if (status != SceneEventProgressStatus.Started)
-                    throw new InvalidOperationException($"Loading '{LobbySceneName}' was refused: {status}.");
+                    throw new InvalidOperationException($"Loading '{SessionServices.LobbySceneName}' was refused: {status}.");
 
                 await loadCompleted.Task.AttachExternalCancellation(ct);
             }
@@ -141,48 +243,54 @@ namespace ProjectScare.Network
             }
 
             // Netcode only changes the active scene on Single loads.
-            SceneManager.SetActiveScene(SceneManager.GetSceneByName(LobbySceneName));
+            SceneManager.SetActiveScene(SceneManager.GetSceneByName(SessionServices.LobbySceneName));
         }
 
         private async UniTask HandleCreationFailureAsync(Exception failure, CancellationToken destroyToken)
         {
-            Debug.LogError($"Room creation failed: {failure}", this);
+            Debug.LogError($"Room creation failed: {SessionServices.DescribeFailure(failure)}", this);
 
             string playerMessage = failure is OperationCanceledException ? TimeoutMessage : GenericFailureMessage;
 
+            StopHeartbeat();
+
             try
             {
-                await AbortHostAsync(destroyToken);
+                await sessionServices.ShutdownNetcodeAsync(destroyToken);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
                 Debug.LogError($"Aborting the host failed: {e}", this);
             }
 
+            // Cleared before waiting so OnDestroy does not remove the same lobby twice.
+            Task<Lobby> abandonedCreation = lobbyCreation;
+            lobbyCreation = null;
+
+            await sessionServices.WaitForLobbyCleanupAsync(RemoveLobbyAsync(abandonedCreation), destroyToken);
+
             if (destroyToken.IsCancellationRequested)
                 return;
 
-            isCreating = false;
+            sessionServices.EndOperation();
+            joinCodeBus.Set(null);
             hostFailedBus.Raise(playerMessage);
         }
 
-        private async UniTask AbortHostAsync(CancellationToken destroyToken)
+        private async UniTask RemoveLobbyAsync(Task<Lobby> creation)
         {
-            networkManager.Shutdown();
-
-            // Shutdown is deferred: an immediate retry would find Netcode still running and StartHost would fail.
-            await UniTask.WaitWhile(() => networkManager.IsListening, cancellationToken: destroyToken);
-
-            Scene lobbyScene = SceneManager.GetSceneByName(LobbySceneName);
-
-            if (!lobbyScene.isLoaded)
+            if (creation == null || creation.IsFaulted)
                 return;
 
-            // Null when the scene is already being unloaded.
-            AsyncOperation unload = SceneManager.UnloadSceneAsync(lobbyScene);
-
-            if (unload != null)
-                await unload.ToUniTask(cancellationToken: destroyToken);
+            try
+            {
+                Lobby lobby = await creation;
+                await LobbyService.Instance.DeleteLobbyAsync(lobby.Id);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Removing the lobby failed: {SessionServices.DescribeFailure(e)}", this);
+            }
         }
     }
 }
