@@ -14,7 +14,9 @@ namespace ProjectScare.UI
         [SerializeField] private Toggle publicToggle;
         [SerializeField] private Button createButton;
         [SerializeField] private TMP_Text createLabel;
+        [SerializeField] private TMP_Text errorText;
         [SerializeField] private HostGameRequestBus hostRequestedBus;
+        [SerializeField] private StringEventBus hostFailedBus;
 
         private bool requestSent;
 
@@ -22,7 +24,9 @@ namespace ProjectScare.UI
         {
             gameNameField.onValueChanged.AddListener(RefreshCreateButton);
             createButton.onClick.AddListener(RequestHostGame);
+            hostFailedBus.Raised += HandleHostFailed;
             requestSent = false;
+            errorText.text = string.Empty;
             RefreshCreateButton(gameNameField.text);
         }
 
@@ -30,6 +34,7 @@ namespace ProjectScare.UI
         {
             gameNameField.onValueChanged.RemoveListener(RefreshCreateButton);
             createButton.onClick.RemoveListener(RequestHostGame);
+            hostFailedBus.Raised -= HandleHostFailed;
         }
 
         private void RefreshCreateButton(string gameName)
@@ -44,8 +49,18 @@ namespace ProjectScare.UI
 
         private void RequestHostGame()
         {
-            hostRequestedBus.Raise(HostGameRequest.Create(gameNameField.text, publicToggle.isOn));
+            errorText.text = string.Empty;
             requestSent = true;
+            RefreshCreateButton(gameNameField.text);
+
+            // Raised last so a synchronous failure is not overwritten by the blocked state above.
+            hostRequestedBus.Raise(HostGameRequest.Create(gameNameField.text, publicToggle.isOn));
+        }
+
+        private void HandleHostFailed(string message)
+        {
+            requestSent = false;
+            errorText.text = message;
             RefreshCreateButton(gameNameField.text);
         }
     }

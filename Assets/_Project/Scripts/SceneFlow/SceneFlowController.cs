@@ -10,6 +10,7 @@ namespace ProjectScare.SceneFlow
     public sealed class SceneFlowController : MonoBehaviour
     {
         [SerializeField] private StringEventBus sceneRequestBus;
+        [SerializeField] private EventBus contentUnloadRequestBus;
         [SerializeField] private ScreenFader screenFader;
 
         private string contentSceneName;
@@ -21,9 +22,17 @@ namespace ProjectScare.SceneFlow
             isChangingScene = false;
         }
 
-        private void OnEnable() => sceneRequestBus.Raised += HandleSceneRequested;
+        private void OnEnable()
+        {
+            sceneRequestBus.Raised += HandleSceneRequested;
+            contentUnloadRequestBus.Raised += HandleContentUnloadRequested;
+        }
 
-        private void OnDisable() => sceneRequestBus.Raised -= HandleSceneRequested;
+        private void OnDisable()
+        {
+            sceneRequestBus.Raised -= HandleSceneRequested;
+            contentUnloadRequestBus.Raised -= HandleContentUnloadRequested;
+        }
 
         private void HandleSceneRequested(string sceneName)
         {
@@ -64,6 +73,35 @@ namespace ProjectScare.SceneFlow
             catch (Exception e) when (e is not OperationCanceledException)
             {
                 Debug.LogError($"Scene change to '{sceneName}' failed: {e}", this);
+            }
+            finally
+            {
+                isChangingScene = false;
+            }
+        }
+
+        private void HandleContentUnloadRequested()
+        {
+            if (isChangingScene)
+            {
+                Debug.LogWarning("Content unload request ignored: a scene change is in progress.", this);
+                return;
+            }
+
+            UnloadRequestedContentAsync(destroyCancellationToken).Forget();
+        }
+
+        private async UniTaskVoid UnloadRequestedContentAsync(CancellationToken ct)
+        {
+            isChangingScene = true;
+
+            try
+            {
+                await UnloadContentSceneAsync(ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                Debug.LogError($"Unloading content scene '{contentSceneName}' failed: {e}", this);
             }
             finally
             {
