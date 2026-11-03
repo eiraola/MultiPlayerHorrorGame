@@ -156,6 +156,8 @@ MonoBehaviour:
   contentUnloadRequestBus: {fileID: 11400000, guid: 781b04e654074ddcbbb97ca39eecb92f, type: 2}
   regionsBus: {fileID: 11400000, guid: 3ad4d71e8ccb29fe78067705bb6edc11, type: 2}
   joinCodeBus: {fileID: 11400000, guid: 3fb82d6e19c74a57b0e46c1da95f7208, type: 2}
+  roomNameBus: {fileID: 11400000, guid: 69fac1d66a8143e1b4657f245d8433f9, type: 2}
+  sessionEndedBus: {fileID: 11400000, guid: 58bc35dda87549419e3ab14f3f444b9d, type: 2}
 --- !u!4 &375693978
 Transform:
   m_ObjectHideFlags: 0
@@ -163,6 +165,56 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 375693976}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &392516840
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 392516842}
+  - component: {fileID: 392516841}
+  m_Layer: 0
+  m_Name: SessionExitController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &392516841
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 392516840}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03d000baa15ae034bb47fbac096de374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ProjectScare.Network::ProjectScare.Network.SessionExitController
+  menuSceneName: Menu
+  networkManager: {fileID: 1698815433}
+  sessionServices: {fileID: 804759697}
+  leaveRequestBus: {fileID: 11400000, guid: ea8b37d7787f4855a9ad5263b7382da4, type: 2}
+  sessionEndedBus: {fileID: 11400000, guid: 58bc35dda87549419e3ab14f3f444b9d, type: 2}
+  sceneRequestBus: {fileID: 11400000, guid: bc3f7031dd21e4248a84d0b2bb648bc2, type: 2}
+--- !u!4 &392516842
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 392516840}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -815,6 +867,7 @@ MonoBehaviour:
   joinRequestedBus: {fileID: 11400000, guid: 9d0211e0f9e845d4195446b6ab083145, type: 2}
   joinFailedBus: {fileID: 11400000, guid: 65d7a414334efbe375d7c4877e0232ae, type: 2}
   contentUnloadRequestBus: {fileID: 11400000, guid: 781b04e654074ddcbbb97ca39eecb92f, type: 2}
+  sessionEndedBus: {fileID: 11400000, guid: 58bc35dda87549419e3ab14f3f444b9d, type: 2}
 --- !u!4 &1757640088
 Transform:
   m_ObjectHideFlags: 0
@@ -842,3 +895,4 @@ SceneRoots:
   - {fileID: 375693978}
   - {fileID: 804759698}
   - {fileID: 1757640088}
+  - {fileID: 392516842}

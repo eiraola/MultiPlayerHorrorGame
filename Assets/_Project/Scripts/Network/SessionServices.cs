@@ -52,12 +52,7 @@ namespace ProjectScare.Network
 
         public async UniTask ShutdownNetcodeAsync(CancellationToken destroyToken)
         {
-            networkManager.Shutdown();
-
-            // Shutdown is deferred: an immediate retry would find Netcode still running and starting it would fail.
-            await UniTask.WaitWhile(
-                () => networkManager.IsListening || networkManager.ShutdownInProgress,
-                cancellationToken: destroyToken);
+            await StopNetcodeAsync(destroyToken);
 
             Scene lobbyScene = SceneManager.GetSceneByName(LobbySceneName);
 
@@ -69,6 +64,19 @@ namespace ProjectScare.Network
 
             if (unload != null)
                 await unload.ToUniTask(cancellationToken: destroyToken);
+        }
+
+        // Leaves the lobby scene loaded, so it stays on screen until a fade covers it.
+        public async UniTask StopNetcodeAsync(CancellationToken destroyToken)
+        {
+            // It may have stopped on its own already, for example when the host leaves.
+            if (networkManager.IsListening)
+                networkManager.Shutdown();
+
+            // Shutdown is deferred: an immediate retry would find Netcode still running and starting it would fail.
+            await UniTask.WaitWhile(
+                () => networkManager.IsListening || networkManager.ShutdownInProgress,
+                cancellationToken: destroyToken);
         }
 
         public async UniTask WaitForLobbyCleanupAsync(UniTask cleanup, CancellationToken destroyToken)

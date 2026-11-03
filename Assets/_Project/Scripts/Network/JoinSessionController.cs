@@ -32,14 +32,23 @@ namespace ProjectScare.Network
         [SerializeField] private JoinGameRequestBus joinRequestedBus;
         [SerializeField] private StringEventBus joinFailedBus;
         [SerializeField] private EventBus contentUnloadRequestBus;
+        [SerializeField] private EventBus sessionEndedBus;
 
         private Task<Lobby> lobbyJoin;
 
         private void Awake() => lobbyJoin = null;
 
-        private void OnEnable() => joinRequestedBus.Raised += HandleJoinRequested;
+        private void OnEnable()
+        {
+            joinRequestedBus.Raised += HandleJoinRequested;
+            sessionEndedBus.Raised += HandleSessionEnded;
+        }
 
-        private void OnDisable() => joinRequestedBus.Raised -= HandleJoinRequested;
+        private void OnDisable()
+        {
+            joinRequestedBus.Raised -= HandleJoinRequested;
+            sessionEndedBus.Raised -= HandleSessionEnded;
+        }
 
         // Best effort: if the process dies first, the seat stays taken until the host creates another room.
         private void OnDestroy() => LeaveLobbyAsync(lobbyJoin).Forget();
@@ -166,6 +175,14 @@ namespace ProjectScare.Network
 
             sessionServices.EndOperation();
             joinFailedBus.Raise(playerMessage);
+        }
+
+        // Gives the seat back, so another player can join the host's room.
+        private void HandleSessionEnded()
+        {
+            Task<Lobby> endedJoin = lobbyJoin;
+            lobbyJoin = null;
+            LeaveLobbyAsync(endedJoin).Forget();
         }
 
         private async UniTask LeaveLobbyAsync(Task<Lobby> join)

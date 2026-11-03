@@ -37,6 +37,8 @@ namespace ProjectScare.Network
         [SerializeField] private EventBus contentUnloadRequestBus;
         [SerializeField] private StringArrayValueBus regionsBus;
         [SerializeField] private StringValueBus joinCodeBus;
+        [SerializeField] private StringValueBus roomNameBus;
+        [SerializeField] private EventBus sessionEndedBus;
 
         private Task<Lobby> lobbyCreation;
         private CancellationTokenSource heartbeatCts;
@@ -47,9 +49,17 @@ namespace ProjectScare.Network
             heartbeatCts = null;
         }
 
-        private void OnEnable() => hostRequestedBus.Raised += HandleHostRequested;
+        private void OnEnable()
+        {
+            hostRequestedBus.Raised += HandleHostRequested;
+            sessionEndedBus.Raised += HandleSessionEnded;
+        }
 
-        private void OnDisable() => hostRequestedBus.Raised -= HandleHostRequested;
+        private void OnDisable()
+        {
+            hostRequestedBus.Raised -= HandleHostRequested;
+            sessionEndedBus.Raised -= HandleSessionEnded;
+        }
 
         private void Start() => LoadRegionsAsync(destroyCancellationToken).Forget();
 
@@ -111,6 +121,7 @@ namespace ProjectScare.Network
 
                 StartHeartbeat(lobby.Id, destroyToken);
                 joinCodeBus.Set(lobby.LobbyCode);
+                roomNameBus.Set(lobby.Name);
 
                 StartHost();
                 await LoadLobbySceneAsync(creationCts.Token);
@@ -274,7 +285,18 @@ namespace ProjectScare.Network
 
             sessionServices.EndOperation();
             joinCodeBus.Set(null);
+            roomNameBus.Set(null);
             hostFailedBus.Raise(playerMessage);
+        }
+
+        // Removing the lobby makes its code invalid at once, instead of waiting for it to expire.
+        private void HandleSessionEnded()
+        {
+            StopHeartbeat();
+
+            Task<Lobby> endedCreation = lobbyCreation;
+            lobbyCreation = null;
+            RemoveLobbyAsync(endedCreation).Forget();
         }
 
         private async UniTask RemoveLobbyAsync(Task<Lobby> creation)

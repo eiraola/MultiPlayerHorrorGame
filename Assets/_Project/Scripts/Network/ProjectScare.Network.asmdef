@@ -4,6 +4,7 @@
     "references": [
         "ProjectScare.Core",
         "UniTask",
+        "Unity.Collections",
         "Unity.Netcode.Runtime",
         "Unity.Networking.Transport",
         "Unity.Services.Core",

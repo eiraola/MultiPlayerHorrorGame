@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using ProjectScare.Core;
@@ -66,7 +67,7 @@ namespace ProjectScare.SceneFlow
                 if (!await screenFader.FadeToBlackAsync(ct))
                     return;
 
-                await UnloadContentSceneAsync(ct);
+                await UnloadAllContentScenesAsync(ct);
                 await LoadContentSceneAsync(sceneName, ct);
                 await screenFader.FadeFromBlackAsync(ct);
             }
@@ -115,6 +116,25 @@ namespace ProjectScare.SceneFlow
                 return;
 
             await SceneManager.UnloadSceneAsync(contentSceneName).ToUniTask(cancellationToken: ct);
+            contentSceneName = null;
+        }
+
+        // Also unloads scenes this controller did not load, such as the one Netcode loads for the lobby.
+        private async UniTask UnloadAllContentScenesAsync(CancellationToken ct)
+        {
+            var scenes = new List<Scene>(SceneManager.sceneCount);
+
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+
+                if (scene.isLoaded && scene != gameObject.scene)
+                    scenes.Add(scene);
+            }
+
+            foreach (Scene scene in scenes)
+                await SceneManager.UnloadSceneAsync(scene).ToUniTask(cancellationToken: ct);
+
             contentSceneName = null;
         }
 
