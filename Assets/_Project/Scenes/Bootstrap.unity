@@ -206,6 +206,7 @@ MonoBehaviour:
   joinCodeBus: {fileID: 11400000, guid: 3fb82d6e19c74a57b0e46c1da95f7208, type: 2}
   roomNameBus: {fileID: 11400000, guid: 69fac1d66a8143e1b4657f245d8433f9, type: 2}
   sessionEndedBus: {fileID: 11400000, guid: 58bc35dda87549419e3ab14f3f444b9d, type: 2}
+  countdownBus: {fileID: 11400000, guid: 7e82c6f810d1cec4db7b3a39ee70ab52, type: 2}
 --- !u!4 &375693978
 Transform:
   m_ObjectHideFlags: 0
@@ -655,6 +656,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: ProjectScare.SceneFlow::ProjectScare.SceneFlow.SceneFlowController
   sceneRequestBus: {fileID: 11400000, guid: bc3f7031dd21e4248a84d0b2bb648bc2, type: 2}
   contentUnloadRequestBus: {fileID: 11400000, guid: 781b04e654074ddcbbb97ca39eecb92f, type: 2}
+  fadeToBlackRequestBus: {fileID: 11400000, guid: 40932c3246dca8a4dad8a083fbb1ad28, type: 2}
+  fadedToBlackBus: {fileID: 11400000, guid: 5723908674eba614c92cd98a1c607ef8, type: 2}
+  fadeFromBlackRequestBus: {fileID: 11400000, guid: 617ca9dc220f8e64098dd10807e7e795, type: 2}
   screenFader: {fileID: 1131213477}
 --- !u!114 &1131213477
 MonoBehaviour:
@@ -855,7 +859,7 @@ MonoBehaviour:
     RecycleNetworkIds: 1
     NetworkIdRecycleDelay: 120
     RpcHashSize: 0
-    LoadSceneTimeOut: 120
+    LoadSceneTimeOut: 30
     SpawnTimeout: 10
     EnableNetworkLogs: 1
     NetworkTopology: 0
@@ -931,6 +935,55 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2116016614
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2116016616}
+  - component: {fileID: 2116016615}
+  m_Layer: 0
+  m_Name: GameStartController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2116016615
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2116016614}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ca8ee67d982937469bca177313a59c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: ProjectScare.Network::ProjectScare.Network.GameStartController
+  networkManager: {fileID: 1698815433}
+  countdownBus: {fileID: 11400000, guid: 7e82c6f810d1cec4db7b3a39ee70ab52, type: 2}
+  fadeToBlackRequestBus: {fileID: 11400000, guid: 40932c3246dca8a4dad8a083fbb1ad28, type: 2}
+  fadedToBlackBus: {fileID: 11400000, guid: 5723908674eba614c92cd98a1c607ef8, type: 2}
+  fadeFromBlackRequestBus: {fileID: 11400000, guid: 617ca9dc220f8e64098dd10807e7e795, type: 2}
+--- !u!4 &2116016616
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2116016614}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -945,3 +998,4 @@ SceneRoots:
   - {fileID: 1757640088}
   - {fileID: 392516842}
   - {fileID: 228558513}
+  - {fileID: 2116016616}

@@ -39,6 +39,7 @@ namespace ProjectScare.Network
         [SerializeField] private StringValueBus joinCodeBus;
         [SerializeField] private StringValueBus roomNameBus;
         [SerializeField] private EventBus sessionEndedBus;
+        [SerializeField] private IntValueBus countdownBus;
 
         private Task<Lobby> lobbyCreation;
         private CancellationTokenSource heartbeatCts;
@@ -53,12 +54,14 @@ namespace ProjectScare.Network
         {
             hostRequestedBus.Raised += HandleHostRequested;
             sessionEndedBus.Raised += HandleSessionEnded;
+            countdownBus.Changed += HandleCountdownChanged;
         }
 
         private void OnDisable()
         {
             hostRequestedBus.Raised -= HandleHostRequested;
             sessionEndedBus.Raised -= HandleSessionEnded;
+            countdownBus.Changed -= HandleCountdownChanged;
         }
 
         private void Start() => LoadRegionsAsync(destroyCancellationToken).Forget();
@@ -224,7 +227,8 @@ namespace ProjectScare.Network
             NetworkSceneManager sceneManager = networkManager.SceneManager;
 
             // The filter goes first because the synchronization mode reads it to pick the scenes it keeps out of the list.
-            sceneManager.VerifySceneBeforeLoading = (_, sceneName, _) => sceneName == SessionServices.LobbySceneName;
+            sceneManager.VerifySceneBeforeLoading = (_, sceneName, _) =>
+                sceneName == SessionServices.LobbySceneName || sceneName == SessionServices.MainGameSceneName;
             sceneManager.SetClientSynchronizationMode(LoadSceneMode.Additive);
         }
 
@@ -292,6 +296,27 @@ namespace ProjectScare.Network
             joinCodeBus.Set(null);
             roomNameBus.Set(null);
             hostFailedBus.Raise(playerMessage);
+        }
+
+        // Only the host has a lobby creation, so this does nothing on clients.
+        private void HandleCountdownChanged(int countdown)
+        {
+            if (countdown == LobbyRules.CountdownFinished && lobbyCreation != null)
+                LockLobbyAsync(lobbyCreation).Forget();
+        }
+
+        // Best effort: if it fails, the room stays visible and the player limit still keeps others out.
+        private async UniTaskVoid LockLobbyAsync(Task<Lobby> creation)
+        {
+            try
+            {
+                Lobby lobby = await creation;
+                await LobbyService.Instance.UpdateLobbyAsync(lobby.Id, new UpdateLobbyOptions { IsLocked = true });
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"Locking the lobby failed: {SessionServices.DescribeFailure(e)}", this);
+            }
         }
 
         // Removing the lobby makes its code invalid at once, instead of waiting for it to expire.

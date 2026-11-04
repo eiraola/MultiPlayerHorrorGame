@@ -12,6 +12,9 @@ namespace ProjectScare.SceneFlow
     {
         [SerializeField] private StringEventBus sceneRequestBus;
         [SerializeField] private EventBus contentUnloadRequestBus;
+        [SerializeField] private EventBus fadeToBlackRequestBus;
+        [SerializeField] private EventBus fadedToBlackBus;
+        [SerializeField] private EventBus fadeFromBlackRequestBus;
         [SerializeField] private ScreenFader screenFader;
 
         private string contentSceneName;
@@ -27,12 +30,16 @@ namespace ProjectScare.SceneFlow
         {
             sceneRequestBus.Raised += HandleSceneRequested;
             contentUnloadRequestBus.Raised += HandleContentUnloadRequested;
+            fadeToBlackRequestBus.Raised += HandleFadeToBlackRequested;
+            fadeFromBlackRequestBus.Raised += HandleFadeFromBlackRequested;
         }
 
         private void OnDisable()
         {
             sceneRequestBus.Raised -= HandleSceneRequested;
             contentUnloadRequestBus.Raised -= HandleContentUnloadRequested;
+            fadeToBlackRequestBus.Raised -= HandleFadeToBlackRequested;
+            fadeFromBlackRequestBus.Raised -= HandleFadeFromBlackRequested;
         }
 
         private void HandleSceneRequested(string sceneName)
@@ -110,6 +117,35 @@ namespace ProjectScare.SceneFlow
             }
         }
 
+        // Requested fades do not mark a scene change: a return to the menu must still be able to replace them.
+        private void HandleFadeToBlackRequested()
+        {
+            if (isChangingScene)
+            {
+                Debug.LogWarning("Fade to black request ignored: a scene change is in progress.", this);
+                return;
+            }
+
+            FadeToBlackAsync(destroyCancellationToken).Forget();
+        }
+
+        private async UniTaskVoid FadeToBlackAsync(CancellationToken ct)
+        {
+            if (await screenFader.FadeToBlackAsync(ct))
+                fadedToBlackBus.Raise();
+        }
+
+        private void HandleFadeFromBlackRequested()
+        {
+            if (isChangingScene)
+            {
+                Debug.LogWarning("Fade from black request ignored: a scene change is in progress.", this);
+                return;
+            }
+
+            screenFader.FadeFromBlackAsync(destroyCancellationToken).Forget();
+        }
+
         private async UniTask UnloadContentSceneAsync(CancellationToken ct)
         {
             if (contentSceneName == null)
@@ -133,7 +169,15 @@ namespace ProjectScare.SceneFlow
             }
 
             foreach (Scene scene in scenes)
-                await SceneManager.UnloadSceneAsync(scene).ToUniTask(cancellationToken: ct);
+            {
+                // Null when Netcode is already unloading it, for example if the host drops during the game start.
+                AsyncOperation unload = SceneManager.UnloadSceneAsync(scene);
+
+                if (unload != null)
+                    await unload.ToUniTask(cancellationToken: ct);
+                else
+                    await UniTask.WaitUntil(() => !scene.isLoaded, cancellationToken: ct);
+            }
 
             contentSceneName = null;
         }

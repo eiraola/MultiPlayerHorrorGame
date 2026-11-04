@@ -14,6 +14,7 @@ namespace ProjectScare.Network
     public sealed class SessionServices : MonoBehaviour
     {
         internal const string LobbySceneName = "MultiplayerLobby";
+        internal const string MainGameSceneName = "MainGame";
         internal const string RelayConnectionType = "dtls";
         internal const string RelayCodeKey = "relayCode";
         internal const string OwnerNameKey = "owner";

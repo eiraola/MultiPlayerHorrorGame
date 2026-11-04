@@ -9,8 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4665a80de174795a861d13fc6783890, type: 3}
+  m_Script: {fileID: 11500000, guid: bc92799815a89f241baf964d224691d1, type: 3}
   m_Name: Session_Players_Bus
-  m_EditorClassIdentifier: ProjectScare.Core::ProjectScare.Core.StringArrayValueBus
+  m_EditorClassIdentifier: ProjectScare.Core::ProjectScare.Core.LobbyPlayerEntryArrayValueBus
   logRaises: 0
-  initialValue: []
