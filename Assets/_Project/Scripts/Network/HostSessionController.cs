@@ -116,8 +116,8 @@ namespace ProjectScare.Network
             {
                 await sessionServices.EnsureSignedInAsync(creationCts.Token);
 
-                string relayCode = await CreateRelayAllocationAsync(request.Region, creationCts.Token);
-                Lobby lobby = await CreateLobbyAsync(request, relayCode, creationCts.Token);
+                (string relayCode, string region) = await CreateRelayAllocationAsync(request.Region, creationCts.Token);
+                Lobby lobby = await CreateLobbyAsync(request, relayCode, region, creationCts.Token);
 
                 StartHeartbeat(lobby.Id, destroyToken);
                 joinCodeBus.Set(lobby.LobbyCode);
@@ -140,8 +140,8 @@ namespace ProjectScare.Network
             contentUnloadRequestBus.Raise();
         }
 
-        // A null region lets the service pick the closest one.
-        private async UniTask<string> CreateRelayAllocationAsync(string region, CancellationToken ct)
+        // A null region lets the service pick the closest one; the allocation tells which one it picked.
+        private async UniTask<(string relayCode, string region)> CreateRelayAllocationAsync(string region, CancellationToken ct)
         {
             Allocation allocation = await RelayService.Instance
                 .CreateAllocationAsync(MaxRemotePlayers, region)
@@ -155,10 +155,10 @@ namespace ProjectScare.Network
 
             transport.SetRelayServerData(allocation.ToRelayServerData(SessionServices.RelayConnectionType));
 
-            return relayCode;
+            return (relayCode, allocation.Region);
         }
 
-        private async UniTask<Lobby> CreateLobbyAsync(HostGameRequest request, string relayCode, CancellationToken ct)
+        private async UniTask<Lobby> CreateLobbyAsync(HostGameRequest request, string relayCode, string region, CancellationToken ct)
         {
             var options = new CreateLobbyOptions
             {
@@ -169,6 +169,11 @@ namespace ProjectScare.Network
                 Data = new Dictionary<string, DataObject>
                 {
                     [SessionServices.RelayCodeKey] = new DataObject(DataObject.VisibilityOptions.Member, relayCode),
+
+                    // Public so the room list can show them; the region is indexed to filter queries by it.
+                    [SessionServices.OwnerNameKey] = new DataObject(DataObject.VisibilityOptions.Public, request.PlayerName),
+                    [SessionServices.RegionKey] = new DataObject(
+                        DataObject.VisibilityOptions.Public, region, DataObject.IndexOptions.S1),
                 },
             };
 

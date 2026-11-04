@@ -48,5 +48,42 @@ namespace ProjectScare.Tests.EditMode
 
             StringAssert.DoesNotContain(SecretPassword, request.ToString());
         }
+
+        [Test]
+        public void Create_IsNotByRoomId()
+        {
+            JoinGameRequest request = JoinGameRequest.Create("AB3D", null, "Ana");
+
+            Assert.IsFalse(request.IsByRoomId);
+            Assert.IsNull(request.RoomId);
+        }
+
+        [Test]
+        public void CreateForRoom_KeepsRoomIdAndPassword()
+        {
+            JoinGameRequest request = JoinGameRequest.CreateForRoom("room-1", SecretPassword, " Ana ");
+
+            Assert.IsTrue(request.IsByRoomId);
+            Assert.AreEqual("room-1", request.RoomId);
+            Assert.AreEqual(string.Empty, request.Code);
+            Assert.AreEqual(SecretPassword, request.Password);
+            Assert.AreEqual("Ana", request.PlayerName);
+        }
+
+        [Test]
+        public void CreateForRoom_EmptyPassword_IsNull()
+        {
+            JoinGameRequest request = JoinGameRequest.CreateForRoom("room-1", string.Empty, "Ana");
+
+            Assert.IsNull(request.Password);
+        }
+
+        [Test]
+        public void CreateForRoom_ToString_DoesNotIncludePassword()
+        {
+            JoinGameRequest request = JoinGameRequest.CreateForRoom("room-1", SecretPassword, "Ana");
+
+            StringAssert.DoesNotContain(SecretPassword, request.ToString());
+        }
     }
 }

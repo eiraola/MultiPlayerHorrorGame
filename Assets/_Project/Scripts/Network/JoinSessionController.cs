@@ -87,17 +87,17 @@ namespace ProjectScare.Network
                 return;
             }
 
-            Debug.Log($"Joined room '{request.Code}'.", this);
+            Debug.Log($"Joined room {request}.", this);
             sessionServices.EndOperation();
             contentUnloadRequestBus.Raise();
         }
 
         private async UniTask<Lobby> JoinLobbyAsync(JoinGameRequest request, CancellationToken ct)
         {
-            var options = new JoinLobbyByCodeOptions { Password = request.Password };
-
             // Kept because the request cannot be cancelled: after a timeout it may still take a seat to give back.
-            lobbyJoin = LobbyService.Instance.JoinLobbyByCodeAsync(request.Code, options);
+            lobbyJoin = request.IsByRoomId
+                ? LobbyService.Instance.JoinLobbyByIdAsync(request.RoomId, new JoinLobbyByIdOptions { Password = request.Password })
+                : LobbyService.Instance.JoinLobbyByCodeAsync(request.Code, new JoinLobbyByCodeOptions { Password = request.Password });
 
             return await lobbyJoin.AsUniTask().AttachExternalCancellation(ct);
         }

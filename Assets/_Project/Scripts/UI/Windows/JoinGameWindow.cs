@@ -18,6 +18,7 @@ namespace ProjectScare.UI
         [SerializeField] private JoinGameRequestBus joinRequestedBus;
         [SerializeField] private StringEventBus joinFailedBus;
         [SerializeField] private StringValueBus playerNameBus;
+        [SerializeField] private RoomListView roomListView;
 
         private bool requestSent;
 
@@ -25,6 +26,7 @@ namespace ProjectScare.UI
         {
             codeField.onValueChanged.AddListener(HandleCodeChanged);
             joinGameButton.onClick.AddListener(RequestJoinGame);
+            roomListView.JoinClicked += RequestJoinRoom;
             joinFailedBus.Raised += HandleJoinFailed;
             requestSent = false;
             errorText.text = string.Empty;
@@ -36,6 +38,7 @@ namespace ProjectScare.UI
         {
             codeField.onValueChanged.RemoveListener(HandleCodeChanged);
             joinGameButton.onClick.RemoveListener(RequestJoinGame);
+            roomListView.JoinClicked -= RequestJoinRoom;
             joinFailedBus.Raised -= HandleJoinFailed;
         }
 
@@ -46,19 +49,27 @@ namespace ProjectScare.UI
             bool canJoin = !requestSent && !string.IsNullOrWhiteSpace(codeField.text);
 
             joinGameButton.interactable = canJoin;
+            roomListView.SetJoinEnabled(!requestSent);
 
             // The button's color tint only reaches its background, so the label shows the inactive state itself.
             joinGameLabel.alpha = canJoin ? ActiveLabelAlpha : InactiveLabelAlpha;
         }
 
-        private void RequestJoinGame()
+        private void RequestJoinGame() =>
+            SendJoinRequest(JoinGameRequest.Create(codeField.text, passwordField.text, playerNameBus.Value));
+
+        // The password field also serves the rooms picked from the list.
+        private void RequestJoinRoom(RoomSummary room) =>
+            SendJoinRequest(JoinGameRequest.CreateForRoom(room.Id, passwordField.text, playerNameBus.Value));
+
+        private void SendJoinRequest(JoinGameRequest request)
         {
             errorText.text = string.Empty;
             requestSent = true;
             RefreshJoinButton();
 
             // Raised last so a synchronous failure is not overwritten by the blocked state above.
-            joinRequestedBus.Raise(JoinGameRequest.Create(codeField.text, passwordField.text, playerNameBus.Value));
+            joinRequestedBus.Raise(request);
         }
 
         private void HandleJoinFailed(string message)

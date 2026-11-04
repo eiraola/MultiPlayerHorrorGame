@@ -16,6 +16,8 @@ namespace ProjectScare.Network
         internal const string LobbySceneName = "MultiplayerLobby";
         internal const string RelayConnectionType = "dtls";
         internal const string RelayCodeKey = "relayCode";
+        internal const string OwnerNameKey = "owner";
+        internal const string RegionKey = "region";
 
         private static readonly TimeSpan LobbyCleanupTimeout = TimeSpan.FromSeconds(5);
 

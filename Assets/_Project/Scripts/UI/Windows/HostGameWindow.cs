@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using ProjectScare.Core;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace ProjectScare.UI
@@ -14,7 +15,8 @@ namespace ProjectScare.UI
         private const int AutomaticRegionIndex = 0;
 
         [SerializeField] private TMP_InputField gameNameField;
-        [SerializeField] private Toggle publicToggle;
+        [FormerlySerializedAs("publicToggle")]
+        [SerializeField] private Toggle privateToggle;
         [SerializeField] private TMP_Dropdown regionDropdown;
         [SerializeField] private Toggle passwordToggle;
         [SerializeField] private TMP_InputField passwordField;
@@ -97,7 +99,7 @@ namespace ProjectScare.UI
             // Raised last so a synchronous failure is not overwritten by the blocked state above.
             hostRequestedBus.Raise(HostGameRequest.Create(
                 gameNameField.text,
-                publicToggle.isOn,
+                !privateToggle.isOn,
                 SelectedRegion(),
                 passwordToggle.isOn ? passwordField.text : null,
                 playerNameBus.Value));
