@@ -1,0 +1,14 @@
+{
+    "name": "ProjectScare.Player",
+    "rootNamespace": "ProjectScare.Player",
+    "references": ["ProjectScare.Core", "Unity.Netcode.Runtime", "Unity.InputSystem", "DOTween.Modules"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
