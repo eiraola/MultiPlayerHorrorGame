@@ -16,7 +16,15 @@ namespace ProjectScare.Player
 
         private LookAngles angles;
 
+        /// <summary>Yaw relative to the parent, or to the world when there is none.</summary>
         public float Yaw => angles.Yaw;
+
+        /// <summary>Takes the body's current yaw, after it has changed parent.</summary>
+        public void SyncYawWithBody()
+        {
+            angles = new LookAngles(body.localEulerAngles.y, angles.Pitch);
+            ApplyAngles();
+        }
 
         private void OnEnable()
         {
@@ -42,7 +50,7 @@ namespace ProjectScare.Player
 
         private void ApplyAngles()
         {
-            body.rotation = Quaternion.Euler(0f, angles.Yaw, 0f);
+            body.localRotation = Quaternion.Euler(0f, angles.Yaw, 0f);
             cameraPivot.localRotation = Quaternion.Euler(angles.Pitch, 0f, 0f);
         }
     }

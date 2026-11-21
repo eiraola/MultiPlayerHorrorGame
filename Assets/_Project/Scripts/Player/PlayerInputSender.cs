@@ -50,6 +50,17 @@ namespace ProjectScare.Player
             tickSystem = null;
         }
 
+        /// <summary>Owner only. Stops walking input, for example while seated.</summary>
+        public void SetMovementEnabled(bool isEnabled)
+        {
+            move = Vector2.zero;
+
+            if (isEnabled)
+                moveAction.action.Enable();
+            else
+                moveAction.action.Disable();
+        }
+
         private void HandleMove(InputAction.CallbackContext context) => move = context.ReadValue<Vector2>();
 
         private void SendInput() => motor.SubmitInputRpc(++sequence, move, look.Yaw);

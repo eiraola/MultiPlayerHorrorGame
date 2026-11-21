@@ -1,0 +1,14 @@
+{
+    "name": "ProjectScare.Vehicles",
+    "rootNamespace": "ProjectScare.Vehicles",
+    "references": ["ProjectScare.Core", "ProjectScare.Player", "Unity.Netcode.Runtime", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

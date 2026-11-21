@@ -77,10 +77,11 @@ namespace ProjectScare.Player
             if (IsOwner)
                 return;
 
-            // Eased over one tick, so the remote player turns smoothly between updates.
+            // Eased over one tick, so the remote player turns smoothly between updates. Local, because
+            // the yaw is relative to the seat while seated.
             yawTween?.Kill();
             yawTween = transform
-                .DORotateQuaternion(Quaternion.Euler(0f, current, 0f), 1f / NetworkManager.NetworkConfig.TickRate)
+                .DOLocalRotateQuaternion(Quaternion.Euler(0f, current, 0f), 1f / NetworkManager.NetworkConfig.TickRate)
                 .SetEase(Ease.Linear)
                 .SetLink(gameObject);
         }

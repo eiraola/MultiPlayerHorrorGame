@@ -1,7 +1,7 @@
 {
     "name": "ProjectScare.Tests.EditMode",
     "rootNamespace": "ProjectScare.Tests.EditMode",
-    "references": ["ProjectScare.Core", "ProjectScare.UI", "ProjectScare.Player", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+    "references": ["ProjectScare.Core", "ProjectScare.UI", "ProjectScare.Player", "ProjectScare.Vehicles", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
