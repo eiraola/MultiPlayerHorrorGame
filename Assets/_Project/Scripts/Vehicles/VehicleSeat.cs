@@ -19,7 +19,7 @@ namespace ProjectScare.Vehicles
         [Tooltip("Where the seated player is placed.")]
         [SerializeField] private Transform seatAnchor;
 
-        [Tooltip("Where the player stands after leaving the seat.")]
+        [Tooltip("Where the player stands after leaving the seat. Inside the cabin, since the player stays aboard.")]
         [SerializeField] private Transform exitPoint;
 
         private readonly NetworkVariable<ulong> driverClientId = new(NoDriver);

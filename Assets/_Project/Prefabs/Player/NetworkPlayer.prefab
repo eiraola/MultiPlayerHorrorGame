@@ -595,4 +595,4 @@ MonoBehaviour:
   range: 2.5
   interactableLayers:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 4294967291

@@ -5,7 +5,7 @@ namespace ProjectScare.Vehicles
 {
     /// <summary>
     /// Moves the vehicle on the host from the input its driver sends. The position and yaw reach
-    /// everyone through a server NetworkTransform, and the seated player rides along as a child.
+    /// everyone through a server NetworkTransform, and the players inside ride along as children.
     /// </summary>
     public sealed class VehicleMotor : NetworkBehaviour
     {
@@ -53,6 +53,10 @@ namespace ProjectScare.Vehicles
             Vector3 position = VehicleMovement.NextPosition(transform.position, yaw, drive.y, lift, speeds, deltaTime);
 
             transform.SetPositionAndRotation(position, Quaternion.Euler(0f, yaw, 0f));
+
+            // Transforms are not synced to physics automatically, and the passengers' controllers
+            // must find the floor and the barriers where they are in this frame.
+            Physics.SyncTransforms();
         }
 
         // A new driver starts from rest, and so does a vehicle left without one.

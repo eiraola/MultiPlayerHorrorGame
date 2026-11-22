@@ -63,6 +63,6 @@ namespace ProjectScare.Player
 
         private void HandleMove(InputAction.CallbackContext context) => move = context.ReadValue<Vector2>();
 
-        private void SendInput() => motor.SubmitInputRpc(++sequence, move, look.Yaw);
+        private void SendInput() => motor.SubmitInputRpc(++sequence, move, look.WorldYaw);
     }
 }

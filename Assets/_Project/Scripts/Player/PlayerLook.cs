@@ -16,8 +16,8 @@ namespace ProjectScare.Player
 
         private LookAngles angles;
 
-        /// <summary>Yaw relative to the parent, or to the world when there is none.</summary>
-        public float Yaw => angles.Yaw;
+        /// <summary>Yaw in world space, which does not depend on what the player is parented to.</summary>
+        public float WorldYaw => body.eulerAngles.y;
 
         /// <summary>Takes the body's current yaw, after it has changed parent.</summary>
         public void SyncYawWithBody()
