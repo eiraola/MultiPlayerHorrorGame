@@ -19,6 +19,9 @@ namespace ProjectScare.Player
         /// <summary>Yaw in world space, which does not depend on what the player is parented to.</summary>
         public float WorldYaw => body.eulerAngles.y;
 
+        /// <summary>Pitch of the camera. Negative values look up.</summary>
+        public float Pitch => angles.Pitch;
+
         /// <summary>Takes the body's current yaw, after it has changed parent.</summary>
         public void SyncYawWithBody()
         {

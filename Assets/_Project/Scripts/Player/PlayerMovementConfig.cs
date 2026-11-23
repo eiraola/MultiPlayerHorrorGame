@@ -21,11 +21,18 @@ namespace ProjectScare.Player
         [Tooltip("Small downward speed kept while grounded, so the controller stays on slopes and steps.")]
         [SerializeField, Range(-10f, 0f)] private float groundedVerticalSpeed = -2f;
 
+        [SerializeField, Min(0f)] private float swimSpeed = 2.5f;
+
+        [Tooltip("Speed when rising or sinking with the up and down keys.")]
+        [SerializeField, Min(0f)] private float swimVerticalSpeed = 2f;
+
         public float WalkSpeed => walkSpeed;
         public float LookSensitivity => lookSensitivity;
         public float MinPitch => minPitch;
         public float MaxPitch => maxPitch;
         public float Gravity => gravity;
         public float GroundedVerticalSpeed => groundedVerticalSpeed;
+        public float SwimSpeed => swimSpeed;
+        public float SwimVerticalSpeed => swimVerticalSpeed;
     }
 }

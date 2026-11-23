@@ -9,6 +9,7 @@ namespace ProjectScare.Player
     public static class PlayerMovement
     {
         private const float FullTurn = 360f;
+        private const float MaxPitch = 90f;
 
         public static Vector2 SanitizeMove(Vector2 move)
         {
@@ -19,6 +20,10 @@ namespace ProjectScare.Player
         }
 
         public static float SanitizeYaw(float yaw) => float.IsFinite(yaw) ? Mathf.Repeat(yaw, FullTurn) : 0f;
+
+        public static float SanitizePitch(float pitch) => float.IsFinite(pitch) ? Mathf.Clamp(pitch, -MaxPitch, MaxPitch) : 0f;
+
+        public static float SanitizeAxis(float value) => float.IsFinite(value) ? Mathf.Clamp(value, -1f, 1f) : 0f;
 
         public static Vector3 HorizontalVelocity(Vector2 move, float yaw, float speed) =>
             Quaternion.Euler(0f, yaw, 0f) * new Vector3(move.x, 0f, move.y) * speed;

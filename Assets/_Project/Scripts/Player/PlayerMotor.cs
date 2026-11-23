@@ -9,6 +9,8 @@ namespace ProjectScare.Player
     /// through a server NetworkTransform, and the yaw through a variable that every non-owner applies.
     /// The owner sends its yaw in world space, which stays right while the player boards or leaves a
     /// vehicle, when the owner and the host briefly disagree on what the player is parented to.
+    /// How the input becomes movement depends on the current mode, walking or swimming, which
+    /// <see cref="MovementZone"/> triggers switch. The game takes place at sea, so players start swimming.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public sealed class PlayerMotor : NetworkBehaviour
@@ -22,16 +24,29 @@ namespace ProjectScare.Player
         private Vector2 move;
         private uint lastSequence;
         private float worldYaw;
-        private float verticalSpeed;
+        private float pitch;
+        private float vertical;
         private Tween yawTween;
 
+        private WalkMovement walkMovement;
+        private SwimMovement swimMovement;
+        private IPlayerMovementMode currentMovement;
+
         private float ParentYaw => transform.parent != null ? transform.parent.eulerAngles.y : 0f;
+
+        private void Awake()
+        {
+            walkMovement = new WalkMovement(config);
+            swimMovement = new SwimMovement(config);
+            SetMovement(swimMovement);
+        }
 
         public override void OnNetworkSpawn()
         {
             move = Vector2.zero;
             lastSequence = 0;
-            verticalSpeed = 0f;
+            pitch = 0f;
+            vertical = 0f;
             worldYaw = PlayerMovement.SanitizeYaw(transform.eulerAngles.y);
 
             yaw.OnValueChanged += HandleYawChanged;
@@ -51,7 +66,8 @@ namespace ProjectScare.Player
         }
 
         [Rpc(SendTo.Server, Delivery = RpcDelivery.Unreliable)]
-        public void SubmitInputRpc(uint sequence, Vector2 newMove, float newWorldYaw, RpcParams rpcParams = default)
+        public void SubmitInputRpc(
+            uint sequence, Vector2 newMove, float newWorldYaw, float newPitch, float newVertical, RpcParams rpcParams = default)
         {
             // Unreliable messages can arrive late and out of order: an older one would undo a newer input.
             if (rpcParams.Receive.SenderClientId != OwnerClientId || sequence <= lastSequence)
@@ -60,6 +76,8 @@ namespace ProjectScare.Player
             lastSequence = sequence;
             move = PlayerMovement.SanitizeMove(newMove);
             worldYaw = PlayerMovement.SanitizeYaw(newWorldYaw);
+            pitch = PlayerMovement.SanitizePitch(newPitch);
+            vertical = PlayerMovement.SanitizeAxis(newVertical);
             yaw.Value = PlayerMovement.SanitizeYaw(worldYaw - ParentYaw);
         }
 
@@ -71,12 +89,32 @@ namespace ProjectScare.Player
                 return;
 
             float deltaTime = Time.deltaTime;
-            verticalSpeed = PlayerMovement.NextVerticalSpeed(
-                verticalSpeed, characterController.isGrounded, config.Gravity, config.GroundedVerticalSpeed, deltaTime);
-
-            Vector3 velocity = PlayerMovement.HorizontalVelocity(move, worldYaw, config.WalkSpeed);
-            velocity.y = verticalSpeed;
+            Vector3 velocity = currentMovement.Velocity(
+                move, worldYaw, pitch, vertical, characterController.isGrounded, deltaTime);
             characterController.Move(velocity * deltaTime);
+        }
+
+        // Handled on every instance and even before spawning, so a player who appears inside a zone
+        // still gets its mode. Trigger messages also reach this component while it is disabled.
+        private void OnTriggerEnter(Collider other)
+        {
+            if (other.TryGetComponent(out MovementZone zone))
+                SetMovement(zone.SwimInside ? swimMovement : walkMovement);
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.TryGetComponent(out MovementZone zone))
+                SetMovement(zone.SwimInside ? walkMovement : swimMovement);
+        }
+
+        private void SetMovement(IPlayerMovementMode next)
+        {
+            if (next == currentMovement)
+                return;
+
+            currentMovement = next;
+            currentMovement.Enter();
         }
 
         // The owner already turned on its own, and the host would only drag it back a tick.

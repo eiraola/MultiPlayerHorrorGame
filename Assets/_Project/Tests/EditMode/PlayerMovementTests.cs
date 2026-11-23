@@ -55,5 +55,21 @@ namespace ProjectScare.Tests.EditMode
             Assert.AreEqual(-3f, PlayerMovement.NextVerticalSpeed(-1f, false, -20f, -2f, 0.1f), Tolerance);
             Assert.AreEqual(-2f, PlayerMovement.NextVerticalSpeed(-10f, true, -20f, -2f, 0.1f), Tolerance);
         }
+
+        [TestCase(-120f, -90f)]
+        [TestCase(45f, 45f)]
+        [TestCase(float.NaN, 0f)]
+        public void SanitizePitch_StaysWithinStraightUpAndDown(float pitch, float expected)
+        {
+            Assert.AreEqual(expected, PlayerMovement.SanitizePitch(pitch), Tolerance);
+        }
+
+        [TestCase(3f, 1f)]
+        [TestCase(-0.5f, -0.5f)]
+        [TestCase(float.PositiveInfinity, 0f)]
+        public void SanitizeAxis_StaysWithinOne(float value, float expected)
+        {
+            Assert.AreEqual(expected, PlayerMovement.SanitizeAxis(value), Tolerance);
+        }
     }
 }

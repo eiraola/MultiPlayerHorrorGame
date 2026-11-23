@@ -404,14 +404,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 950562648
+  GlobalObjectIdHash: 4115931632
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -469,7 +469,7 @@ MonoBehaviour:
   ScaleLerpSmoothing: 1
   ScaleMaxInterpolationTime: 0.1
   AuthorityMode: 0
-  TickSyncChildren: 0
+  TickSyncChildren: 1
   UseUnreliableDeltas: 0
   SyncPositionX: 1
   SyncPositionY: 1
@@ -519,6 +519,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: ProjectScare.Player::ProjectScare.Player.PlayerInputSender
   ShowTopMostFoldoutHeaderGroup: 1
   moveAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  swimVerticalAction: {fileID: 4208072772114597592, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   look: {fileID: 7133006180530278479}
   motor: {fileID: 4342777860236599184}
 --- !u!114 &3308702539630259359
